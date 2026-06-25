@@ -1,6 +1,5 @@
-const fs = require("fs");
-const path = require("path");
 const bigInt = require("big-integer");
+const nodeFileIO = require("./node-fileio");
 
 const definitions = require('./definitions');
 const Program = require('./program');
@@ -455,15 +454,7 @@ Attendant.prototype.readCardsSync = function(request) {
     return this.libraryReaderSync(request);
   }
 
-  if (request.kind == "system") {
-    return fs.readFileSync(path.resolve(__dirname, "..", request.path), {
-      encoding: "utf8"
-    });
-  }
-
-  return fs.readFileSync(path.resolve(".", request.path), {
-    encoding: "utf8"
-  });
+  return nodeFileIO.readCardsSync(request);
 };
 
 Attendant.prototype.readCardsAsync = async function(request) {

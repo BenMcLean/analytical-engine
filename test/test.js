@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const AE = require('../index');
+const noNodeFileIO = require('../scripts/no-node-fileio');
 
 test('clear state test', async () => {
 	let eng = new AE.Interface();
@@ -270,4 +271,11 @@ S002`;
 
 	assert.deepEqual(seen.map(card => card.text), ['N000 1', 'N001 2', '+']);
 	assert.equal(seen[0].sourceUri, 'mem:/workspace/program.ae');
+});
+
+test('browser-safe filesystem stub throws a clear error', async () => {
+	assert.throws(
+		() => noNodeFileIO.readCardsSync({ kind: 'system', path: 'Library/sqrt.ae' }),
+		/error.*unavailable|unavailable.*build/i
+	);
 });

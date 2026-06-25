@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Babbage's Analytic Engine emulator",
   "main": "index.js",
+  "browser": {
+    "./scripts/node-fileio.js": "./scripts/no-node-fileio.js"
+  },
   "scripts": {
     "test": "node --test"
   },
