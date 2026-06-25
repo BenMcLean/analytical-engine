@@ -267,6 +267,12 @@ Engine.prototype.processCard = function() {
         card = card.replace(/\s+$/, "");
         if (card !== "") {
           this.attendant.traceLog("Halt: " + card);
+          if (card === "HCF") {
+            // The intended 19th century implementation of this function used physical matches.
+            this.errorDetected = true;
+            this.lastStopReason = "hcf";
+            throw new Error("HCF: Engine halted with extreme prejudice.");
+          }
         }
         break;
       //  Curve Drawing Apparatus

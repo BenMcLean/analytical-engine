@@ -387,3 +387,18 @@ S002`, {
 	assert.equal(session.getLastDebugEvent().type, 'step');
 	assert.equal(session.getState().engine.lastStopReason, 'completed');
 });
+
+test('halt message HCF throws a JavaScript exception', async () => {
+	const session = new AE.DebuggerSession();
+	await session.submitProgramAsync(`N000 1
+H HCF
+N001 2`);
+
+	assert.throws(
+		() => session.resume(),
+		/HCF: Engine halted with extreme prejudice\./
+	);
+	assert.equal(session.getState().engine.lastStopReason, 'hcf');
+	assert.equal(session.getState().engine.errorDetected, true);
+	assert.match(session.getState().annunciator.attendantLog, /Halt: HCF/);
+});
