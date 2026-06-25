@@ -279,3 +279,11 @@ test('browser-safe filesystem stub throws a clear error', async () => {
 		/error.*unavailable|unavailable.*build/i
 	);
 });
+
+test('esm entrypoint exposes the public api', async () => {
+	const esm = await import('../index.mjs');
+
+	assert.equal(typeof esm.default.Interface, 'function');
+	assert.equal(esm.Interface, esm.default.Interface);
+	assert.equal(typeof esm.createUriLibraryReader, 'function');
+});

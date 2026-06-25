@@ -20,6 +20,12 @@ This specific implementation differs from the web emulator in how you interact w
 const AE = require('analytical-engine');
 ```
 
+The package can also be imported from modern ESM-aware tooling:
+
+```js
+import AE, { Interface } from 'analytical-engine';
+```
+
 ## `AE.Interface`
 
 `AE.Interface` is an object that is meant to help set up the engine in a common way using only a few commands. If you were not to use this, it would take many lines of code to connect each of the separate components of the Analytical Engine together.
@@ -120,7 +126,7 @@ The default desktop usage assumes a Node environment for reading program files a
 
 For web builds or editor embeddings, construct the interface with a `libraryReader` and submit source via `submitProgramFromStream()` or `submitProgramAsync()`. This allows you to bridge the emulator to browser-native streams, `fetch()`, virtual file systems, or editor-provided file APIs without depending on Node `fs`.
 
-Library requests now carry enough information for a host environment to resolve them realistically:
+Library requests carry enough information for a host environment to resolve them realistically:
 
 * `kind`: `"system"` for built-in library cards, `"user"` for `A include cards ...`.
 * `name`: the requested library name.
@@ -157,9 +163,13 @@ const outputs = engine.getOutputs();
 
 The example above uses Visual Studio Code because it has a convenient `Uri` and workspace file API, but the same host-facing API can be adapted to other IDEs, browser tools, sandboxes or custom runtimes that provide text and library data through URIs or stream-like abstractions.
 
+### Packaging Notes
+
+The package exposes both CommonJS and ESM entry points. The command-line interface remains Node-specific, while browser-oriented bundlers can use the package entry point together with the browser-safe filesystem adapter mapping in `package.json`.
+
 ### Breakpoints / Future Tracing
 
-Breakpoint tracing is not fully implemented yet, but the API is now shaped so it can be added without replacing the program-loading contract:
+Breakpoint tracing is not fully implemented yet, but the API is shaped so it can be added without replacing the program-loading contract:
 
 * Cards can retain `sourceUri` metadata from the submitted program or injected libraries.
 * Library readers can report the `sourceUri` for included files.
