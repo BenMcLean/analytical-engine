@@ -26,6 +26,8 @@ The package can also be imported from modern ESM-aware tooling:
 import AE, { Interface } from 'analytical-engine';
 ```
 
+For debugger-oriented embeddings, the package also exports `DebuggerSession`.
+
 ## `AE.Interface`
 
 `AE.Interface` is an object that is meant to help set up the engine in a common way using only a few commands. If you were not to use this, it would take many lines of code to connect each of the separate components of the Analytical Engine together.
@@ -73,6 +75,21 @@ Registers optional execution hooks. This is intended to keep future debugger and
 
 * `beforeCard(card, engine)`: called immediately before a card executes. If it returns `false`, execution stops before the card is processed.
 * `afterCard(card, engine, status)`: called after a card executes, with `status.halted` and `status.errorDetected`.
+
+### Debugger API
+
+For editor and IDE integrations, `AE.DebuggerSession` provides a higher-level debugging surface around `AE.Interface`.
+
+* `submitProgram(...)`, `submitProgramAsync(...)`, `submitProgramFromStream(...)`
+* `step()`, `stepCards(count)`, `runUntilPause(limit)`, `resume(limit)`, `start()`, `pause()`
+* `getState()` for a structured machine snapshot
+* `getDisplayState()` for card-reader, mill, store, and output display data
+* `getCurrentCard()`, `getNextCard()`, `getLastDebugEvent()`
+* `addBreakpoint(...)`, `setBreakpoints(...)`, `getBreakpoints()`, `removeBreakpoint(id)`, `clearBreakpoints()`
+
+Breakpoints may match by `sourceUri`, `sourceName`, `sourceLine`, `cardIndex`, or exact card `text`, and may be disabled with `enabled: false`.
+
+You may also construct a debugger session around an existing interface instance with `new AE.DebuggerSession({ interface })`, and retrieve it later with `getInterface()`. In that mode, the debugger session and interface share the same live emulator state. Reading state through the wrapped interface is fine, but driving execution or mutating emulator state through both APIs at once can lead to confusing ownership.
 
 ### `new AE.Interface(options)`
 

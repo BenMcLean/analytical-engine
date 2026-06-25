@@ -2,6 +2,8 @@
 
 "use strict";
 
+const debug = require("./debug");
+
 function Annunciator() {
   this.L_output = "";
   this.M_ingress = [];
@@ -110,6 +112,28 @@ Annunciator.prototype.changeMillRunning = function(run) {
   if (this.watch) {
     this.M_runstop = run ? "Running" : "Stopped";
   }
+};
+
+Annunciator.prototype.getState = function() {
+  return {
+    attendantLog: this.L_output,
+    millIngress: this.M_ingress.slice(),
+    millEgress: this.M_egress.slice(),
+    millOperation: this.M_op,
+    millRunUp: this.M_runup,
+    millRunStop: this.M_runstop,
+    tracing: this.tracing,
+    animating: this.animating,
+    override: this.override,
+    watch: this.watch,
+    panelShowing: this.panelShowing,
+    currentCardIndex: this.currentCard,
+    cardChain: this.cardChain
+      ? this.cardChain.map(function(card) {
+          return debug.createCardSnapshot(card);
+        })
+      : null
+  };
 };
 
 module.exports = Annunciator;

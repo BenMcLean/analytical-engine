@@ -298,3 +298,89 @@ test('cli help exits successfully', async () => {
 
 	assert.match(output, /Usage: .* filename/);
 });
+
+test('debugger api can step card by card and expose structured state', async () => {
+	const session = new AE.DebuggerSession();
+	await session.submitProgramAsync(`N000 1
+N001 2
++
+L000
+L001
+S002`, {
+		sourceName: 'program.ae',
+		sourceUri: 'mem:/workspace/program.ae'
+	});
+
+	const firstStep = session.step();
+	assert.equal(firstStep.progressed, true);
+	assert.equal(firstStep.state.engine.currentCard.text, 'N000 1');
+	assert.equal(firstStep.state.engine.currentCard.sourceUri, 'mem:/workspace/program.ae');
+
+	const displayState = session.interface.getDisplayState();
+	assert.equal(displayState.cardReader.visibleCards[0].card.text, 'N000 1');
+	assert.equal(Array.isArray(displayState.store.columns), true);
+});
+
+test('debugger breakpoints can stop by source uri and line', async () => {
+	const session = new AE.DebuggerSession();
+	await session.submitProgramAsync(`N000 1
+N001 2
++
+L000
+L001
+S002`, {
+		sourceName: 'program.ae',
+		sourceUri: 'mem:/workspace/program.ae'
+	});
+
+	session.addBreakpoint({
+		sourceUri: 'mem:/workspace/program.ae',
+		sourceLine: 3
+	});
+
+	const result = session.runUntilPause();
+	assert.equal(result.event.type, 'breakpoint');
+	assert.equal(result.state.engine.currentCard.text, '+');
+	assert.equal(result.state.engine.lastStopReason, 'breakpoint');
+});
+
+test('debugger session can wrap and expose an existing interface', async () => {
+	const existingInterface = new AE.Interface();
+	const session = new AE.DebuggerSession({ interface: existingInterface });
+
+	assert.equal(session.getInterface(), existingInterface);
+
+	await session.submitProgramAsync(`N000 1
+N001 2
++
+L000
+L001
+S002`);
+
+	session.stepCards(6);
+	assert.equal(existingInterface.store.get(2).value, 3n);
+});
+
+test('disabled breakpoints do not pause execution and resume aliases runUntilPause', async () => {
+	const session = new AE.DebuggerSession();
+	await session.submitProgramAsync(`N000 1
+N001 2
++
+L000
+L001
+S002`, {
+		sourceName: 'program.ae',
+		sourceUri: 'mem:/workspace/program.ae'
+	});
+
+	session.addBreakpoint({
+		sourceUri: 'mem:/workspace/program.ae',
+		sourceLine: 3,
+		enabled: false
+	});
+
+	const result = session.resume();
+	assert.notEqual(result.event && result.event.type, 'breakpoint');
+	assert.equal(session.getLastDebugEvent().type, 'step');
+	assert.equal(session.getState().engine.lastStopReason, 'completed');
+});

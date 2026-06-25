@@ -1,6 +1,7 @@
 const bigInt = require("big-integer");
 
 const definitions = require('./definitions');
+const debug = require('./debug');
 
 //  The Mill
 
@@ -449,6 +450,19 @@ Mill.prototype.showState = function() {
   for (i = 0; i < 2; i++) {
     this.panel.changeEgress(i, this.egress[i]);
   }
+};
+
+Mill.prototype.getState = function() {
+  return {
+    operation: this.operation,
+    operationString: this.currentOperationString(),
+    opargs: this.opargs,
+    index: this.index,
+    runUp: this.run_up,
+    ingress: this.ingress.map(debug.toDebugValue),
+    egress: this.egress.map(debug.toDebugValue),
+    currentAxis: debug.toDebugValue(this.currentAxis)
+  };
 };
 
 module.exports = Mill;

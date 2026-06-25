@@ -2,6 +2,8 @@
 
 "use strict";
 
+const debug = require("./debug");
+
 //  Program display/editing panel
 
 var loadButton;
@@ -128,6 +130,14 @@ Card.prototype.toString = function() {
   );
 };
 
+Card.prototype.getSourceLine = function() {
+  return debug.getCardSourceLine(this);
+};
+
+Card.prototype.toDebugObject = function() {
+  return debug.createCardSnapshot(this);
+};
+
 //  Card source index
 
 function CardSource(sn, si, su) {
@@ -179,6 +189,53 @@ CardReader.prototype.nextCard = function() {
   } else {
     return null;
   }
+};
+
+CardReader.prototype.peekCard = function() {
+  if (this.nextCardNumber < this.ncards) {
+    return this.cards[this.nextCardNumber];
+  }
+  return null;
+};
+
+CardReader.prototype.currentCard = function() {
+  if (this.nextCardNumber > 0 && this.nextCardNumber <= this.ncards) {
+    return this.cards[this.nextCardNumber - 1];
+  }
+  return null;
+};
+
+CardReader.prototype.getState = function() {
+  return {
+    nextCardNumber: this.nextCardNumber,
+    totalCards: this.ncards,
+    currentCard: this.currentCard()
+      ? this.currentCard().toDebugObject()
+      : null,
+    nextCard: this.peekCard() ? this.peekCard().toDebugObject() : null,
+    cards: this.cards.map(function(card) {
+      return card.toDebugObject();
+    })
+  };
+};
+
+CardReader.prototype.getDisplayState = function(contextBefore, windowSize) {
+  var before = contextBefore === undefined ? 2 : contextBefore;
+  var size = windowSize === undefined ? 5 : windowSize;
+  var start = Math.max(this.nextCardNumber - before, 0);
+  var visibleCards = [];
+
+  for (var i = start; i < start + size && i < this.cards.length; i++) {
+    visibleCards.push({
+      isCurrent: i === this.nextCardNumber,
+      card: this.cards[i].toDebugObject()
+    });
+  }
+
+  return {
+    currentIndex: this.nextCardNumber,
+    visibleCards: visibleCards
+  };
 };
 
 //  Advance the chain n cards.  Returns true if within

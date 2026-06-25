@@ -1,6 +1,7 @@
 const bigInt = require("big-integer");
 
 const definitions = require('./definitions');
+const debug = require('./debug');
 //  The Analytical Engine
 
 /*  This function connects all of the components of the engine
@@ -29,6 +30,9 @@ Engine.prototype.reset = function() {
   this.errorDetected = false;
   this.running = false;
   this.trace = false;
+  this.currentCard = null;
+  this.lastCard = null;
+  this.lastStopReason = null;
   this.cardReader.firstCard();
 };
 
@@ -56,6 +60,7 @@ Engine.prototype.loadNewCards = function() {
 
 //  Start the engine
 Engine.prototype.start = function() {
+  this.lastStopReason = null;
   this.panel.changeMillRunning((this.running = true));
 };
 
@@ -80,6 +85,7 @@ Engine.prototype.isRunning = function() {
 Engine.prototype.errorHalt = function(why, perpetrator) {
   this.attendant.millAbnormality(why, perpetrator);
   this.errorDetected = true;
+  this.lastStopReason = "error";
   this.halt();
 };
 
@@ -89,6 +95,9 @@ Engine.prototype.commence = function() {
   this.store.reset();
   this.mill.reset();
   this.curvedraw.changePaper();
+  this.currentCard = null;
+  this.lastCard = null;
+  this.lastStopReason = null;
   this.cardReader.firstCard();
 };
 
@@ -98,6 +107,7 @@ Engine.prototype.processCard = function() {
   var currentCard;
 
   if ((currentCard = this.cardReader.nextCard())) {
+    this.currentCard = currentCard;
     var card = currentCard.text;
     var operation = card.length === 0 ? " " : card.charAt(0);
     var prime = false;
@@ -110,6 +120,7 @@ Engine.prototype.processCard = function() {
       typeof this.executionHooks.beforeCard === "function" &&
       this.executionHooks.beforeCard(currentCard, this) === false
     ) {
+      this.lastStopReason = "breakpoint";
       this.halt();
       return false;
     }
@@ -251,6 +262,7 @@ Engine.prototype.processCard = function() {
       case "H": // Halt
         this.panel.changeMillRunning((this.running = false), card.substring(1));
         halted = true;
+        this.lastStopReason = "halt";
         card = card.substr(2).replace(/^\s+/, "");
         card = card.replace(/\s+$/, "");
         if (card !== "") {
@@ -329,7 +341,37 @@ Engine.prototype.processCard = function() {
       errorDetected: this.errorDetected
     });
   }
+  if (currentCard) {
+    this.lastCard = currentCard;
+  }
+  if (!cardAvailable && !this.errorDetected && !this.lastStopReason) {
+    this.lastStopReason = "completed";
+  }
   return cardAvailable && !halted && !this.errorDetected;
+};
+
+Engine.prototype.getCurrentCard = function() {
+  return this.currentCard;
+};
+
+Engine.prototype.getLastCard = function() {
+  return this.lastCard;
+};
+
+Engine.prototype.getNextCard = function() {
+  return this.cardReader.peekCard();
+};
+
+Engine.prototype.getState = function() {
+  return {
+    running: this.running,
+    trace: this.trace,
+    errorDetected: this.errorDetected,
+    lastStopReason: this.lastStopReason,
+    currentCard: debug.createCardSnapshot(this.currentCard),
+    lastCard: debug.createCardSnapshot(this.lastCard),
+    nextCard: debug.createCardSnapshot(this.cardReader.peekCard())
+  };
 };
 
 module.exports = Engine;

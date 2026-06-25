@@ -55,7 +55,7 @@ Attendant.prototype.appendCard = function(ctext, source, sindex) {
   if (source && typeof source === "object") {
     cardSource = new CardSource(
       source.sourceName || "Analyst",
-      sindex,
+      source.startIndex !== undefined ? source.startIndex : 0,
       source.sourceUri || null
     );
     if (!this.lastProgramSource) {

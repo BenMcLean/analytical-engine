@@ -1,4 +1,5 @@
 const bigInt = require("big-integer");
+const debug = require("./debug");
 //  The Store
 
 ("use strict");
@@ -53,6 +54,28 @@ Store.prototype.get = function(which) {
   }
   this.timing.storeGet(which);
   return v;
+};
+
+Store.prototype.getState = function() {
+  var columns = [];
+
+  for (var i = 0; i < this.rack.length; i++) {
+    if (this.rack[i]) {
+      columns.push({
+        index: i,
+        value: debug.toDebugValue(this.rack[i])
+      });
+    }
+  }
+
+  return {
+    columns: columns,
+    columnCount: columns.length
+  };
+};
+
+Store.prototype.getDisplayState = function() {
+  return this.getState();
 };
 
 module.exports = Store;

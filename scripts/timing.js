@@ -174,4 +174,21 @@ Timing.prototype.colDistLin = function(col1, col2) {
   return Math.abs(col1 - col2);
 };
 
+Timing.prototype.getState = function() {
+  return {
+    millOperations: this.millOperations,
+    millOp: this.millOp.slice(),
+    storeOperations: this.storeOperations,
+    storeOpPut: this.storeOpPut,
+    storeOpGet: this.storeOpGet,
+    storeCurCol: this.storeCurCol,
+    storeSlewCol: this.storeSlewCol,
+    cardsProcessed: this.cardsProcessed,
+    cardsAdvance: this.cardsAdvance,
+    cardsBack: this.cardsBack,
+    runTime: this.runTime,
+    report: this.report()
+  };
+};
+
 module.exports = Timing;
