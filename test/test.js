@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const childProcess = require('node:child_process');
+const path = require('node:path');
 
 const AE = require('../index');
 const noNodeFileIO = require('../scripts/no-node-fileio');
@@ -286,4 +288,13 @@ test('esm entrypoint exposes the public api', async () => {
 	assert.equal(typeof esm.default.Interface, 'function');
 	assert.equal(esm.Interface, esm.default.Interface);
 	assert.equal(typeof esm.createUriLibraryReader, 'function');
+});
+
+test('cli help exits successfully', async () => {
+	const cliPath = path.resolve(__dirname, '..', 'analytical-engine');
+	const output = childProcess.execFileSync(process.execPath, [cliPath, '--help'], {
+		encoding: 'utf8'
+	});
+
+	assert.match(output, /Usage: .* filename/);
 });
