@@ -2,7 +2,7 @@
 
 "use strict";
 
-const debug = require("./debug");
+import * as debug from "./debug.js";
 
 function Annunciator() {
   this.L_output = "";
@@ -136,4 +136,4 @@ Annunciator.prototype.getState = function() {
   };
 };
 
-module.exports = Annunciator;
+export default Annunciator;

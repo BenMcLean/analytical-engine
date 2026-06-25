@@ -11,4 +11,4 @@ Printer.prototype.output = function(s) {
   this.O_output += s;
 };
 
-module.exports = Printer;
+export default Printer;

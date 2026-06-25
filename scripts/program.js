@@ -2,7 +2,7 @@
 
 "use strict";
 
-const debug = require("./debug");
+import * as debug from "./debug.js";
 
 //  Program display/editing panel
 
@@ -260,9 +260,4 @@ CardReader.prototype.repeat = function(n) {
   return true;
 };
 
-module.exports = {
-  CardReader: CardReader,
-  CardSource: CardSource,
-  Card: Card,
-  Program: Program
-}
+export { CardReader, CardSource, Card, Program };

@@ -1,4 +1,4 @@
-const bigInt = require("big-integer");
+import bigInt from "big-integer";
 //	Curve Drawing Apparatus
 
 ("use strict");
@@ -107,4 +107,4 @@ CurveDrawingApparatus.prototype.scaleNum = function(v) {
   return v.toJSNumber() + this.cscale;
 };
 
-module.exports = CurveDrawingApparatus;
+export default CurveDrawingApparatus;

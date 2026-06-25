@@ -93,8 +93,4 @@ async function writeTextStream(stream, text) {
   throw new TypeError("Unsupported writable stream destination.");
 }
 
-module.exports = {
-  normalizeText: normalizeText,
-  readTextStream: readTextStream,
-  writeTextStream: writeTextStream
-};
+export { normalizeText, readTextStream, writeTextStream };

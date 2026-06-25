@@ -14,13 +14,7 @@ This specific implementation differs from the web emulator in how you interact w
 
 ## `AE`
 
-`AE` is the object that you get when you require this library. It has listings for all of the individual components of the Analytical Engine, as well as a helper called `Interface`.
-
-```js
-const AE = require('analytical-engine');
-```
-
-The package can also be imported from modern ESM-aware tooling:
+`AE` is the object that you get when you import this library. It has listings for all of the individual components of the Analytical Engine, as well as a helper called `Interface`.
 
 ```js
 import AE, { Interface } from 'analytical-engine';
@@ -153,8 +147,8 @@ Library requests carry enough information for a host environment to resolve them
 The package also exports `AE.createUriLibraryReader(...)` to make `Uri`-based resolution easier in environments that use URI-addressed resources.
 
 ```js
-const AE = require('analytical-engine');
-const vscode = require('vscode');
+import AE from 'analytical-engine';
+import * as vscode from 'vscode';
 
 const libraryReader = AE.createUriLibraryReader({
   resolveSystemUri: async request =>
@@ -182,7 +176,7 @@ The example above uses Visual Studio Code because it has a convenient `Uri` and 
 
 ### Packaging Notes
 
-The package exposes both CommonJS and ESM entry points. The command-line interface remains Node-specific, while browser-oriented bundlers can use the package entry point together with the browser-safe filesystem adapter mapping in `package.json`.
+The package is native ESM and targets modern Node runtimes. The command-line interface remains Node-specific, while browser-oriented bundlers can use the package entry point together with the browser-safe filesystem adapter mapping in `package.json`.
 
 ### Breakpoints / Future Tracing
 

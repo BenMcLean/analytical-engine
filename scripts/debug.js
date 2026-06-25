@@ -49,8 +49,4 @@ function createCardSnapshot(card) {
   };
 }
 
-module.exports = {
-  toDebugValue: toDebugValue,
-  getCardSourceLine: getCardSourceLine,
-  createCardSnapshot: createCardSnapshot
-};
+export { toDebugValue, getCardSourceLine, createCardSnapshot };

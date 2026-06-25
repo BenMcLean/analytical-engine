@@ -1,28 +1,29 @@
-const Annunciator = require('./scripts/annunciator');
-const Timing = require('./scripts/timing');
-const Printer = require('./scripts/printer');
-const CurveDrawingApparatus = require('./scripts/curvedrawing');
-const Attendant = require('./scripts/attendant');
-const Mill = require('./scripts/mill');
-const Program = require('./scripts/program');
-const Store = require('./scripts/store');
-const Engine = require('./scripts/engine');
-const StreamIO = require('./scripts/streamio');
-const debug = require('./scripts/debug');
+import Annunciator from './scripts/annunciator.js';
+import Timing from './scripts/timing.js';
+import Printer from './scripts/printer.js';
+import CurveDrawingApparatus from './scripts/curvedrawing.js';
+import Attendant from './scripts/attendant.js';
+import Mill from './scripts/mill.js';
+import * as Program from './scripts/program.js';
+import Store from './scripts/store.js';
+import Engine from './scripts/engine.js';
+import * as StreamIO from './scripts/streamio.js';
+import * as debug from './scripts/debug.js';
 
-exports.Annunciator = Annunciator;
-exports.Timing = Timing;
-exports.Printer = Printer;
-exports.CurveDrawingApparatus = CurveDrawingApparatus;
-exports.Attendant = Attendant;
-exports.Mill = Mill;
-exports.Program = Program;
-exports.Store = Store;
-exports.Engine = Engine;
-exports.readTextStream = StreamIO.readTextStream;
-exports.writeTextStream = StreamIO.writeTextStream;
-exports.createUriLibraryReader = createUriLibraryReader;
-exports.DebuggerSession = DebuggerSession;
+export {
+	Annunciator,
+	Timing,
+	Printer,
+	CurveDrawingApparatus,
+	Attendant,
+	Mill,
+	Program,
+	Store,
+	Engine
+};
+export const readTextStream = StreamIO.readTextStream;
+export const writeTextStream = StreamIO.writeTextStream;
+export { createUriLibraryReader, DebuggerSession };
 
 function Interface(options) {
 	options = options || {};
@@ -308,8 +309,6 @@ Interface.prototype.writeOutputsToStream = async function(streams) {
 	return outputs;
 }
 
-exports.Interface = Interface;
-
 function createUriLibraryReader(options) {
 	options = options || {};
 	var textDecoder = options.textDecoder || new TextDecoder();
@@ -460,3 +459,22 @@ DebuggerSession.prototype.clearBreakpoints = function() {
 DebuggerSession.prototype.removeBreakpoint = function(id) {
 	return this.interface.removeBreakpoint(id);
 }
+
+export { Interface };
+
+export default {
+	Annunciator,
+	Timing,
+	Printer,
+	CurveDrawingApparatus,
+	Attendant,
+	Mill,
+	Program,
+	Store,
+	Engine,
+	Interface,
+	DebuggerSession,
+	readTextStream,
+	writeTextStream,
+	createUriLibraryReader
+};

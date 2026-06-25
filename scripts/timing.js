@@ -1,5 +1,5 @@
 //  Timing
-const definitions = require('./definitions');
+import * as definitions from './definitions.js';
 
 "use strict";
 
@@ -191,4 +191,4 @@ Timing.prototype.getState = function() {
   };
 };
 
-module.exports = Timing;
+export default Timing;

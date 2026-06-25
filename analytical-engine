@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-const path = require('path');
-const fs = require('fs');
+import path from 'node:path';
+import fs from 'node:fs';
 
-const AE = require('./index');
-const yargs = require('yargs/yargs');
-const { hideBin } = require('yargs/helpers');
+import AE from './index.js';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+
 const argv = yargs(hideBin(process.argv))
 	.usage('Usage: $0 filename')
 	.alias('t', 'timing')

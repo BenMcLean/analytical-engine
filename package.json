@@ -2,13 +2,9 @@
   "name": "analytical-engine",
   "version": "0.0.1",
   "description": "Babbage's Analytic Engine emulator",
-  "main": "index.js",
+  "type": "module",
   "exports": {
-    ".": {
-      "import": "./index.mjs",
-      "require": "./index.js",
-      "default": "./index.js"
-    },
+    ".": "./index.js",
     "./package.json": "./package.json",
     "./scripts/*": "./scripts/*",
     "./Library/*": "./Library/*"
@@ -16,12 +12,14 @@
   "browser": {
     "./scripts/node-fileio.js": "./scripts/no-node-fileio.js"
   },
+  "engines": {
+    "node": "^20.19.0 || ^22.12.0 || >=23"
+  },
   "files": [
     "Library",
     "scripts",
     "analytical-engine",
     "index.js",
-    "index.mjs",
     "README.md",
     "package.json"
   ],
@@ -35,7 +33,7 @@
   "license": "ISC",
   "dependencies": {
     "big-integer": "^1.6.22",
-    "yargs": "^17.7.2"
+    "yargs": "^18.0.0"
   },
   "devDependencies": {},
   "directories": {

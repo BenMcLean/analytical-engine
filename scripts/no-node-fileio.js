@@ -8,6 +8,4 @@ function readCardsSync() {
   );
 }
 
-module.exports = {
-  readCardsSync: readCardsSync
-};
+export { readCardsSync };

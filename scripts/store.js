@@ -1,5 +1,5 @@
-const bigInt = require("big-integer");
-const debug = require("./debug");
+import bigInt from "big-integer";
+import * as debug from "./debug.js";
 //  The Store
 
 ("use strict");
@@ -78,4 +78,4 @@ Store.prototype.getDisplayState = function() {
   return this.getState();
 };
 
-module.exports = Store;
+export default Store;

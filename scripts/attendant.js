@@ -1,10 +1,8 @@
-const bigInt = require("big-integer");
-const nodeFileIO = require("./node-fileio");
+import bigInt from "big-integer";
+import * as nodeFileIO from "./node-fileio.js";
 
-const definitions = require('./definitions');
-const Program = require('./program');
-const CardSource = Program.CardSource;
-const Card = Program.Card;
+import * as definitions from './definitions.js';
+import { CardSource, Card } from './program.js';
 
 //  The Attendant
 
@@ -817,4 +815,4 @@ Attendant.prototype.setWriteDown = function() {
   this.writeDown = true;
 };
 
-module.exports = Attendant;
+export default Attendant;

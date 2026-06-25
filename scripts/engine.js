@@ -1,7 +1,7 @@
-const bigInt = require("big-integer");
+import bigInt from "big-integer";
 
-const definitions = require('./definitions');
-const debug = require('./debug');
+import * as definitions from './definitions.js';
+import * as debug from './debug.js';
 //  The Analytical Engine
 
 /*  This function connects all of the components of the engine
@@ -374,4 +374,4 @@ Engine.prototype.getState = function() {
   };
 };
 
-module.exports = Engine;
+export default Engine;

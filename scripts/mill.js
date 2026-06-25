@@ -1,7 +1,7 @@
-const bigInt = require("big-integer");
+import bigInt from "big-integer";
 
-const definitions = require('./definitions');
-const debug = require('./debug');
+import * as definitions from './definitions.js';
+import * as debug from './debug.js';
 
 //  The Mill
 
@@ -465,4 +465,4 @@ Mill.prototype.getState = function() {
   };
 };
 
-module.exports = Mill;
+export default Mill;

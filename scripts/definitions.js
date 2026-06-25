@@ -1,19 +1,19 @@
-const bigInt = require("big-integer");
+import bigInt from "big-integer";
 //  Global definitions
 
 ("use strict");
 
 //  Unicode character escapes.  Named from HTML text entities
 
-exports.C_plusmn = "\xB1"; // Plus or minus sign
-exports.C_times = "\xD7"; // Multiplication sign
-exports.C_divide = "\xF7"; // Division sign
-exports.C_minus = "\u2212"; // Minus sign
+export const C_plusmn = "\xB1"; // Plus or minus sign
+export const C_times = "\xD7"; // Multiplication sign
+export const C_divide = "\xF7"; // Division sign
+export const C_minus = "\u2212"; // Minus sign
 
 //  Global utility functions
 
 //  Return true zero if bigInt is either positive or negative zero
-exports.pzero = function(v) {
+export const pzero = function(v) {
   return v.isZero() ? bigInt.zero : v;
 };
 
@@ -22,25 +22,25 @@ const negate = function(v) {
   return bigInt.zero.subtract(v);
 };
 
-exports.negate = negate;
+export { negate };
 
 //	Edit an integer with commas between thousands
-exports.commas = function(n) {
+export const commas = function(n) {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
 //  Useful bigInts
 
 const K10e50 = bigInt("100000000000000000000000000000000000000000000000000");
-exports.K10e50 = K10e50;
+export { K10e50 };
 const Km10e50 = negate(K10e50);
-exports.Km10e50 = Km10e50;
-exports.K10 = bigInt(10);
+export { Km10e50 };
+export const K10 = bigInt(10);
 
 //operation codes
-exports.OP_NONE = 0;
-exports.OP_ADD = 1;
-exports.OP_SUBTRACT = 2;
-exports.OP_MULTIPLY = 3;
-exports.OP_DIVIDE = 4;
-exports.OP_SHIFT = 5;
+export const OP_NONE = 0;
+export const OP_ADD = 1;
+export const OP_SUBTRACT = 2;
+export const OP_MULTIPLY = 3;
+export const OP_DIVIDE = 4;
+export const OP_SHIFT = 5;

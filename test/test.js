@@ -1,10 +1,13 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const childProcess = require('node:child_process');
-const path = require('node:path');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import childProcess from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const AE = require('../index');
-const noNodeFileIO = require('../scripts/no-node-fileio');
+import AE from '../index.js';
+import * as noNodeFileIO from '../scripts/no-node-fileio.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 test('clear state test', async () => {
 	let eng = new AE.Interface();
@@ -283,7 +286,7 @@ test('browser-safe filesystem stub throws a clear error', async () => {
 });
 
 test('esm entrypoint exposes the public api', async () => {
-	const esm = await import('../index.mjs');
+	const esm = await import('../index.js');
 
 	assert.equal(typeof esm.default.Interface, 'function');
 	assert.equal(esm.Interface, esm.default.Interface);
