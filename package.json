@@ -3,8 +3,12 @@
   "version": "0.0.1",
   "description": "Babbage's Analytic Engine emulator",
   "type": "module",
+  "types": "./index.d.ts",
   "exports": {
-    ".": "./index.js",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
     "./package.json": "./package.json",
     "./scripts/*": "./scripts/*",
     "./Library/*": "./Library/*"
@@ -19,6 +23,7 @@
     "Library",
     "scripts",
     "analytical-engine",
+    "index.d.ts",
     "index.js",
     "README.md",
     "package.json"
