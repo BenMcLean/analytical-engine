@@ -14,6 +14,8 @@ const Card = Program.Card;
 function Attendant(p, t) {
   this.panel = p;
   this.timing = t;
+  this.libraryReader = null;
+  this.libraryReaderSync = null;
   this.reset();
 }
 
@@ -44,11 +46,29 @@ Attendant.prototype.newCardChain = function() {
   this.cardChain = [];
   this.ncards = 0;
   this.errorDetected = false;
+  this.lastProgramSource = null;
 };
 
 //  Append a card to the card chain
-Attendant.prototype.appendCard = function(ctext, sname, sindex) {
-  var cardSource = new CardSource(sname, sindex);
+Attendant.prototype.appendCard = function(ctext, source, sindex) {
+  var cardSource;
+
+  if (source && typeof source === "object") {
+    cardSource = new CardSource(
+      source.sourceName || "Analyst",
+      sindex,
+      source.sourceUri || null
+    );
+    if (!this.lastProgramSource) {
+      this.lastProgramSource = {
+        sourceName: cardSource.sourceName,
+        sourceUri: cardSource.sourceUri
+      };
+    }
+  } else {
+    cardSource = new CardSource(source, sindex);
+  }
+
   var card = new Card(ctext, this.ncards, cardSource);
   this.cardChain[this.ncards++] = card;
 };
@@ -413,9 +433,137 @@ Attendant.prototype.setLibraryTemplate = function(s) {
   this.libraryTemplate = s;
 };
 
+Attendant.prototype.setLibraryReader = function(reader) {
+  this.libraryReader = reader;
+};
+
+Attendant.prototype.setLibraryReaderSync = function(reader) {
+  this.libraryReaderSync = reader;
+};
+
+Attendant.prototype.setBreakpointHook = function(hook) {
+  this.breakpointHook = hook;
+};
+
 //	Test if library name is valid.  This avoids mischief by the user
 Attendant.prototype.isLibraryNameValid = function(s) {
   return s.match(/^[abcdefghijklmnopqrstuvwxyz\-_0123456789]+$/);
+};
+
+Attendant.prototype.readCardsSync = function(request) {
+  if (this.libraryReaderSync) {
+    return this.libraryReaderSync(request);
+  }
+
+  if (request.kind == "system") {
+    return fs.readFileSync(path.resolve(__dirname, "..", request.path), {
+      encoding: "utf8"
+    });
+  }
+
+  return fs.readFileSync(path.resolve(".", request.path), {
+    encoding: "utf8"
+  });
+};
+
+Attendant.prototype.readCardsAsync = async function(request) {
+  if (this.libraryReader) {
+    return await this.libraryReader(request);
+  }
+
+  return this.readCardsSync(request);
+};
+
+Attendant.prototype.interpolateLibraryText = function(index, lspec, text) {
+  return this.interpolateLibraryResponse(index, lspec, {
+    text: text
+  });
+};
+
+Attendant.prototype.interpolateLibraryResponse = function(index, lspec, response) {
+  response = response || {};
+  var text = typeof response === "string" ? response : response.text;
+  var lines = text.replace(/\r\n/g, "\n").split("\n");
+  var sourceName = response.sourceName || (lspec + " [Library]");
+  var sourceUri = response.sourceUri || null;
+
+  this.cardChain.splice(
+    index,
+    1,
+    new Card(
+      ". Begin interpolation of " +
+        lspec +
+        " from library by attendant",
+      -1,
+      this.Source
+    )
+  );
+
+  var n = index + 1;
+  var src = new CardSource(sourceName, 0, sourceUri);
+  for (var j = 0; j < lines.length; j++) {
+    this.cardChain.splice(n, 0, new Card(lines[j], j, src));
+    n++;
+  }
+
+  this.cardChain.splice(
+    n,
+    0,
+    new Card(
+      ". End interpolation of " +
+        lspec +
+        " from library by attendant",
+      -1,
+      this.Source
+    )
+  );
+
+  this.ncards = this.cardChain.length;
+  this.libLoadStatus = 0;
+};
+
+Attendant.prototype.resolveLibraryRequest = function(card) {
+  if (card.text.match(/^a include from library cards for /i)) {
+    this.lspec = card.text.substr(33).toLowerCase();
+    this.lspec = this.lspec.replace(/^\s+/, "");
+    this.lspec = this.lspec.replace(/\s+$/, "");
+
+    if (!this.isLibraryNameValid(this.lspec) || !this.libraryTemplate) {
+      return {
+        error:
+          'I cannot include cards from the invalid library name of "' +
+          this.lspec +
+          '".'
+      };
+    }
+
+    return {
+      lspec: this.lspec,
+      request: {
+        kind: "system",
+        name: this.lspec,
+        path: this.libraryTemplate.replace(/\$/, this.lspec),
+        sourceName: card.source ? card.source.sourceName : null,
+        sourceUri: card.source ? card.source.sourceUri : null
+      }
+    };
+  }
+
+  if (card.text.match(/^a include cards /i)) {
+    this.lspec = card.text.substr(16).replace(/^\s+/, "").replace(/\s+$/, "");
+    return {
+      lspec: this.lspec,
+      request: {
+        kind: "user",
+        name: this.lspec,
+        path: "$.ae".replace(/\$/, this.lspec),
+        sourceName: card.source ? card.source.sourceName : null,
+        sourceUri: card.source ? card.source.sourceUri : null
+      }
+    };
+  }
+
+  return null;
 };
 
 //	Process library inclusion requests in mounted chain
@@ -427,111 +575,65 @@ Attendant.prototype.expandLibraryRequests = function(start) {
 
   this.libLoadStatus = 0; // Set library load idle
   for (var i = start; i < this.cardChain.length; i++) {
-    if (this.cardChain[i].text.match(/^a include from library cards for /i)) {
-      this.lspec = this.cardChain[i].text.substr(33).toLowerCase();
-      this.lspec = this.lspec.replace(/^\s+/, "");
-      this.lspec = this.lspec.replace(/\s+$/, "");
-      if (this.isLibraryNameValid(this.lspec) && this.libraryTemplate) {
-        var url = this.libraryTemplate.replace(/\$/, this.lspec);
-        this.libLoadI = i;
-        this.libLoadStatus = 1;
-        try {
-          var text = fs.readFileSync(path.resolve(__dirname, '..', url), {
-            encoding: "utf8"
-          });
-          var lines = text.replace(/\r\n/g, '\n').split("\n");
-          this.cardChain.splice(
-            this.libLoadI,
-            1,
-            new Card(
-              ". Begin interpolation of " +
-                this.lspec +
-                " from library by attendant",
-              -1,
-              this.Source
-            )
-          );
-          var n = this.libLoadI + 1;
-          var src = new CardSource(this.lspec + " [Library]", 0);
-          for (var j = 0; j < lines.length; j++) {
-            this.cardChain.splice(n, 0, new Card(lines[j], j, src));
-            n++;
-          }
-          this.cardChain.splice(
-            n,
-            0,
-            new Card(
-              ". End interpolation of " +
-                this.lspec +
-                " from library by attendant",
-              -1,
-              this.Source
-            )
-          );
-          this.ncards = this.cardChain.length;
-          this.libLoadStatus = 0; // Set library load idle
-        } catch (e) {
-          this.complain(
-            this.cardChain[this.libLoadI],
-            "Cannot load cards from library " + url + ", error " + e + "."
-          );
-          this.libLoadStatus = 2; // Mark library load failed
-        }
-      } else {
-        this.complain(
-          this.cardChain[i],
-          'I cannot include cards from the invalid library name of "' +
-            lspec +
-            '".'
-        );
-        this.libLoadStatus = 2; // Mark library load failed
-      }
-    } else if (this.cardChain[i].text.match(/^a include cards /i)) {
-      this.lspec = this.cardChain[i].text.substr(16);
-      var url = '$.ae'.replace(/\$/, this.lspec);
+    var resolution = this.resolveLibraryRequest(this.cardChain[i]);
+    if (resolution) {
       this.libLoadI = i;
       this.libLoadStatus = 1;
+      if (resolution.error) {
+        this.complain(this.cardChain[i], resolution.error);
+        this.libLoadStatus = 2;
+        continue;
+      }
+
       try {
-        var text = fs.readFileSync(path.resolve('.', url), {
-          encoding: "utf8"
-        });
-        var lines = text.replace(/\r\n/g, '\n').split("\n");
-        this.cardChain.splice(
-          this.libLoadI,
-          1,
-          new Card(
-            ". Begin interpolation of " +
-              this.lspec +
-              " from library by attendant",
-            -1,
-            this.Source
-          )
-        );
-        var n = this.libLoadI + 1;
-        var src = new CardSource(this.lspec + " [Library]", 0);
-        for (var j = 0; j < lines.length; j++) {
-          this.cardChain.splice(n, 0, new Card(lines[j], j, src));
-          n++;
-        }
-        this.cardChain.splice(
-          n,
-          0,
-          new Card(
-            ". End interpolation of " +
-              this.lspec +
-              " from library by attendant",
-            -1,
-            this.Source
-          )
-        );
-        this.ncards = this.cardChain.length;
-        this.libLoadStatus = 0; // Set library load idle
+        var response = this.readCardsSync(resolution.request);
+        this.interpolateLibraryResponse(this.libLoadI, resolution.lspec, typeof response === "string" ? { text: response } : response);
       } catch (e) {
         this.complain(
           this.cardChain[this.libLoadI],
-          "Cannot load cards from library " + url + ", error " + e + "."
+          "Cannot load cards from library " +
+            resolution.request.path +
+            ", error " +
+            e +
+            "."
         );
-        this.libLoadStatus = 2; // Mark library load failed
+        this.libLoadStatus = 2;
+      }
+    }
+  }
+  return this.libLoadStatus;
+};
+
+Attendant.prototype.expandLibraryRequestsAsync = async function(start) {
+  if (this.libLoadStatus == 1) {
+    return this.libLoadStatus;
+  }
+
+  this.libLoadStatus = 0;
+  for (var i = start; i < this.cardChain.length; i++) {
+    var resolution = this.resolveLibraryRequest(this.cardChain[i]);
+    if (resolution) {
+      this.libLoadI = i;
+      this.libLoadStatus = 1;
+      if (resolution.error) {
+        this.complain(this.cardChain[i], resolution.error);
+        this.libLoadStatus = 2;
+        continue;
+      }
+
+      try {
+        var response = await this.readCardsAsync(resolution.request);
+        this.interpolateLibraryResponse(this.libLoadI, resolution.lspec, typeof response === "string" ? { text: response } : response);
+      } catch (e) {
+        this.complain(
+          this.cardChain[this.libLoadI],
+          "Cannot load cards from library " +
+            resolution.request.path +
+            ", error " +
+            e +
+            "."
+        );
+        this.libLoadStatus = 2;
       }
     }
   }

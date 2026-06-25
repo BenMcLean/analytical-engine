@@ -4,7 +4,7 @@
   "description": "Babbage's Analytic Engine emulator",
   "main": "index.js",
   "scripts": {
-    "test": "ava"
+    "test": "node --test"
   },
   "bin": {
     "analytical-engine": "./analytical-engine"
@@ -15,9 +15,7 @@
     "big-integer": "^1.6.22",
     "yargs": "^8.0.1"
   },
-  "devDependencies": {
-    "ava": "^0.19.1"
-  },
+  "devDependencies": {},
   "directories": {
     "test": "test"
   },

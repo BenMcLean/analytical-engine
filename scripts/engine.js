@@ -20,6 +20,7 @@ function Engine(p, at, mi, st, cr, pr, cda) {
   this.printer = pr;
   this.curvedraw = cda;
   //        this.punch = new CardPunchingApparatus();
+  this.executionHooks = null;
   this.reset();
 }
 
@@ -41,6 +42,10 @@ Engine.prototype.setTrace = function(t) {
   this.trace = t;
   this.mill.setTrace(t);
   this.store.setTrace(t);
+};
+
+Engine.prototype.setExecutionHooks = function(hooks) {
+  this.executionHooks = hooks || null;
 };
 
 //  Prepare to load a new chain of cards
@@ -100,6 +105,14 @@ Engine.prototype.processCard = function() {
     var v = bigInt.zero;
 
     cardAvailable = true;
+    if (
+      this.executionHooks &&
+      typeof this.executionHooks.beforeCard === "function" &&
+      this.executionHooks.beforeCard(currentCard, this) === false
+    ) {
+      this.halt();
+      return false;
+    }
     if (this.trace) {
       this.attendant.traceLog("Card:  " + currentCard);
     }
@@ -305,6 +318,16 @@ Engine.prototype.processCard = function() {
         this.errorHalt("Unknown operation", currentCard);
         break;
     }
+  }
+  if (
+    currentCard &&
+    this.executionHooks &&
+    typeof this.executionHooks.afterCard === "function"
+  ) {
+    this.executionHooks.afterCard(currentCard, this, {
+      halted: halted,
+      errorDetected: this.errorDetected
+    });
   }
   return cardAvailable && !halted && !this.errorDetected;
 };

@@ -14,10 +14,29 @@ function Program(c, att, cr, st, cda, t, eng) {
   this.curvedraw = cda;
   this.timing = t;
   this.engine = eng;
+  this.sourceInfo = null;
 }
 
 Program.prototype.clear = function() {
   this.cards = "";
+};
+
+Program.prototype.setSourceInfo = function(sourceInfo) {
+  this.sourceInfo = sourceInfo || null;
+};
+
+Program.prototype.getSourceInfo = function() {
+  if (this.sourceInfo) {
+    return {
+      sourceName: this.sourceInfo.sourceName || "Analyst",
+      sourceUri: this.sourceInfo.sourceUri
+    };
+  }
+
+  return {
+    sourceName: "Analyst",
+    sourceUri: null
+  };
 };
 
 /*  Submit the contents of the Analyst's Program by
@@ -51,9 +70,10 @@ Program.prototype.submit1 = function(comments) {
         the card chain. */
 Program.prototype.submit = function(comments) {
   this.attendant.newCardChain();
+  var sourceInfo = this.getSourceInfo();
   var lines = this.cards.replace(/\r\n/g, '\n').split("\n");
   for (var i = 0; i < lines.length; i++) {
-    this.attendant.appendCard(lines[i], "Analyst", 0);
+    this.attendant.appendCard(lines[i], sourceInfo, i);
   }
   var stat = this.attendant.expandLibraryRequests(0);
   if (stat != 1) {
@@ -68,6 +88,24 @@ Program.prototype.submit = function(comments) {
   }
   return stat; // Return indication of pending library load
 }
+
+Program.prototype.submitAsync = async function(comments) {
+  this.attendant.newCardChain();
+  var sourceInfo = this.getSourceInfo();
+  var lines = this.cards.replace(/\r\n/g, "\n").split("\n");
+  for (var i = 0; i < lines.length; i++) {
+    this.attendant.appendCard(lines[i], sourceInfo, i);
+  }
+  var stat = await this.attendant.expandLibraryRequestsAsync(0);
+  if (stat != 1) {
+    this.attendant.examineCards(comments);
+    this.cardreader.mountCards(this.attendant.deliverCardChain());
+    this.engine.reset();
+    this.engine.commence();
+    this.timing.reset();
+  }
+  return stat;
+};
 
 //  A single card
 
@@ -92,9 +130,10 @@ Card.prototype.toString = function() {
 
 //  Card source index
 
-function CardSource(sn, si) {
+function CardSource(sn, si, su) {
   this.sourceName = sn; // Card source (usually file name)
   this.startIndex = si; // First index from this source
+  this.sourceUri = su || null; // Optional URI-ish identifier for editor integrations
 }
 
 //  The card reader

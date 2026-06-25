@@ -36,9 +36,47 @@ The `clearState` method of `AE.Interface` is meant to clear the contents of the 
 
 The `submitProgram` method of `AE.Interface` is meant to be a shortcut method of setting up a program on the Analytical Engine. The program submitted should be a string. This method should return 0 if the internal libraries referenced in the program were expanded properly. If it doesn't, check the Attendant's log for errors in `interface.annunciator.L_output`.
 
+### `AE.Interface.submitProgramAsync(cards, options)`
+
+The `submitProgramAsync` method behaves like `submitProgram(cards)`, but allows library includes to be resolved by an asynchronous reader. This is the preferred API when embedding the emulator in browsers, web IDEs, editor extensions, or any host where Node's synchronous `fs` APIs are unavailable.
+
+The optional `options` object may include:
+
+* `sourceName`: a display name for the submitted program.
+* `sourceUri`: a URI-like identifier for the submitted program. This is carried through to cards and library requests so editor integrations can map execution back to the originating document.
+
+### `AE.Interface.submitProgramFromStream(stream, options)`
+
+The `submitProgramFromStream` method reads program text from a modern JavaScript stream source and then submits it asynchronously. It accepts a WHATWG `ReadableStream`, an async iterable of strings or byte chunks, or any object with an async `read()` method returning text.
+
 ### `AE.Interface.runToCompletion()`
 
 The `runToCompletion` method of `AE.Interface` will cause the engine to run until it either finishes or errors out. Errors can be checked for in the Attendant's log (`interface.annunciator.L_output`).
+
+### `AE.Interface.getOutputs()`
+
+Returns the current textual outputs as an object with `attendantLog`, `printer`, and `curveDrawingApparatus` properties.
+
+### `AE.Interface.writeOutputsToStream(streams)`
+
+Writes the current outputs to stream-like destinations. Each destination may be a WHATWG `WritableStream` or an object exposing an async `write(text)` method. The `streams` object can contain `attendantLog`, `printer`, and `curveDrawingApparatus`.
+
+### `AE.Interface.setExecutionHooks(hooks)`
+
+Registers optional execution hooks. This is intended to keep future debugger and breakpoint work straightforward.
+
+* `beforeCard(card, engine)`: called immediately before a card executes. If it returns `false`, execution stops before the card is processed.
+* `afterCard(card, engine, status)`: called after a card executes, with `status.halted` and `status.errorDetected`.
+
+### `new AE.Interface(options)`
+
+The constructor still works without arguments, preserving the existing desktop behavior. For web-friendly embeddings you may also provide:
+
+* `libraryReader`: an async function that receives `{ kind, name, path }` and returns library card text.
+* `libraryReaderSync`: a synchronous equivalent for custom desktop hosts.
+* `executionHooks`: optional hooks equivalent to `setExecutionHooks(hooks)`.
+
+When no reader is supplied, the existing Node filesystem behavior is retained for backwards compatibility.
 
 ## Accessing Engine Components
 
@@ -75,6 +113,57 @@ The constructors for each of these components can be found in the `AE` main expo
 All of the functions described in [The Mathematical Function Library](http://fourmilab.ch/babbage/library.html) are included in this emulator and can be run by using a `A include from library cards for libraryname` card.
 
 You can write your own libraries as well. They must end with the extension `.ae`. You can include them in your code by using a `A include cards relative/path/to/library` card, where the extension is omitted from the library name.
+
+### Web / Editor Embedding
+
+The default desktop usage assumes a Node environment for reading program files and expanding `A include ...` cards. That path still works unchanged.
+
+For web builds or editor embeddings, construct the interface with a `libraryReader` and submit source via `submitProgramFromStream()` or `submitProgramAsync()`. This allows you to bridge the emulator to browser-native streams, `fetch()`, virtual file systems, or editor-provided file APIs without depending on Node `fs`.
+
+Library requests now carry enough information for a host environment to resolve them realistically:
+
+* `kind`: `"system"` for built-in library cards, `"user"` for `A include cards ...`.
+* `name`: the requested library name.
+* `path`: the current library path token the emulator expects, including `.ae` for user includes.
+* `sourceName` and `sourceUri`: the source document that requested the include.
+
+The package also exports `AE.createUriLibraryReader(...)` to make `Uri`-based resolution easier in environments that use URI-addressed resources.
+
+```js
+const AE = require('analytical-engine');
+const vscode = require('vscode');
+
+const libraryReader = AE.createUriLibraryReader({
+  resolveSystemUri: async request =>
+    vscode.Uri.joinPath(extensionUri, request.path),
+  resolveUserUri: async request => {
+    const importer = vscode.Uri.parse(request.sourceUri);
+    const parent = vscode.Uri.joinPath(importer, '..');
+    return vscode.Uri.joinPath(parent, request.path);
+  },
+  readFile: async uri => vscode.workspace.fs.readFile(uri)
+});
+
+const engine = new AE.Interface({ libraryReader });
+
+await engine.submitProgramFromStream(programReadableStream, {
+  sourceName: document.fileName,
+  sourceUri: document.uri.toString()
+});
+engine.runToCompletion();
+
+const outputs = engine.getOutputs();
+```
+
+The example above uses Visual Studio Code because it has a convenient `Uri` and workspace file API, but the same host-facing API can be adapted to other IDEs, browser tools, sandboxes or custom runtimes that provide text and library data through URIs or stream-like abstractions.
+
+### Breakpoints / Future Tracing
+
+Breakpoint tracing is not fully implemented yet, but the API is now shaped so it can be added without replacing the program-loading contract:
+
+* Cards can retain `sourceUri` metadata from the submitted program or injected libraries.
+* Library readers can report the `sourceUri` for included files.
+* Execution hooks can stop before a card executes, which is a natural point for line or card breakpoints.
 
 ## Curve Drawing Apparatus
 
