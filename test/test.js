@@ -118,7 +118,7 @@ L0
 
 test('drawing test', async () => {
 	let eng = new AE.Interface();
-	let emptySvg = '<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg"></svg>';
+	let emptySvg = '<svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>';
 
 	let cards = `        Iteration variable
 N000 -10000000000000000000000000
@@ -163,7 +163,10 @@ CB?24`;
 	eng.submitProgram(cards);
 	eng.runToCompletion();
 
-	assert.notEqual(eng.curveDrawingApparatus.printScreen(), emptySvg);
+	let svg = eng.curveDrawingApparatus.printScreen();
+	assert.notEqual(svg, emptySvg);
+	assert.match(svg, /^<svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet" xmlns="http:\/\/www\.w3\.org\/2000\/svg">/);
+	assert.match(svg, /<polyline /);
 });
 
 test('async stream submission test', async () => {

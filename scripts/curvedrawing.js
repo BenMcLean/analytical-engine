@@ -70,7 +70,7 @@ CurveDrawingApparatus.prototype.changePaper = function() {
 };
 
 CurveDrawingApparatus.prototype.printScreen = function() {
-  let svg = `<svg width="${this.cwid}" height="${this.chgt}" xmlns="http://www.w3.org/2000/svg">`;
+  let svg = `<svg viewBox="0 0 ${this.cwid} ${this.chgt}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">`;
 
   //  Replay the display list, drawing vectors on screen
   var opath = false;
