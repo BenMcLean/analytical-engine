@@ -131,6 +131,16 @@ All of the functions described in [The Mathematical Function Library](http://fou
 
 You can write your own libraries as well. They must end with the extension `.ae`. You can include them in your code by using a `A include cards relative/path/to/library` card, where the extension is omitted from the library name.
 
+### Include Resolution Rules
+
+This package applies one consistent include-resolution rule across the Node CLI, direct Node embedding, and URI-based editor or browser hosts.
+
+* `A include cards some/path` resolves `some/path.ae` relative to the file containing that include card.
+* `A include from library cards for sqrt` first checks for a user override at `Library/sqrt.ae` relative to the including file.
+* If no such user override exists, the built-in packaged library card set is used.
+
+This is a deliberate behavior change from the older 2017 emulator lineage, which effectively relied on the process working directory for user includes and always loaded packaged library cards for library includes. The language syntax is unchanged, but multi-file program resolution is now source-relative, which makes large program trees, nested includes, and project-local library overrides behave consistently.
+
 ### Web / Editor Embedding
 
 The default desktop usage assumes a Node environment for reading program files and expanding `A include ...` cards. That path still works unchanged.
@@ -143,6 +153,8 @@ Library requests carry enough information for a host environment to resolve them
 * `name`: the requested library name.
 * `path`: the current library path token the emulator expects, including `.ae` for user includes.
 * `sourceName` and `sourceUri`: the source document that requested the include.
+
+Hosts should preserve the same search rule described above: resolve user includes relative to the including source, and for system includes try a same-project `Library/<name>.ae` override before falling back to packaged library cards.
 
 The package also exports `AE.createUriLibraryReader(...)` to make `Uri`-based resolution easier in environments that use URI-addressed resources.
 

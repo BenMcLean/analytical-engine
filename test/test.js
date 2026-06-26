@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import childProcess from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import AE from '../index.js';
 import * as noNodeFileIO from '../scripts/no-node-fileio.js';
@@ -67,6 +68,72 @@ A include cards test/addtwo`;
 	eng.runToCompletion();
 
 	assert.equal(eng.store.get(0).value, 6n);
+});
+
+test('relative user includes resolve from the including file source uri', async () => {
+	const fixtureRoot = path.join(__dirname, '.tmp-relative-user-include');
+	const nestedDir = path.join(fixtureRoot, 'programs', 'math');
+	const helperDir = path.join(nestedDir, 'helpers');
+	const mainPath = path.join(nestedDir, 'main.ae');
+	const helperPath = path.join(helperDir, 'addtwo.ae');
+
+	fs.rmSync(fixtureRoot, { recursive: true, force: true });
+	fs.mkdirSync(helperDir, { recursive: true });
+	fs.writeFileSync(mainPath, `N000 4
+A include cards helpers/addtwo`);
+	fs.writeFileSync(helperPath, `N001 2
++
+L000
+L001
+S000`);
+
+	try {
+		let eng = new AE.Interface();
+		const cards = fs.readFileSync(mainPath, 'utf8');
+
+		eng.submitProgram(cards, {
+			sourceName: 'main.ae',
+			sourceUri: pathToFileURL(mainPath).toString()
+		});
+		eng.runToCompletion();
+
+		assert.equal(eng.store.get(0).value, 6n);
+	} finally {
+		fs.rmSync(fixtureRoot, { recursive: true, force: true });
+	}
+});
+
+test('library includes prefer a local Library override before the packaged library', async () => {
+	const fixtureRoot = path.join(__dirname, '.tmp-library-override');
+	const programDir = path.join(fixtureRoot, 'programs');
+	const libraryDir = path.join(programDir, 'Library');
+	const mainPath = path.join(programDir, 'main.ae');
+	const overridePath = path.join(libraryDir, 'override_test.ae');
+
+	fs.rmSync(fixtureRoot, { recursive: true, force: true });
+	fs.mkdirSync(libraryDir, { recursive: true });
+	fs.writeFileSync(mainPath, `N000 4
+A include from library cards for override_test`);
+	fs.writeFileSync(overridePath, `N001 2
++
+L000
+L001
+S000`);
+
+	try {
+		let eng = new AE.Interface();
+		const cards = fs.readFileSync(mainPath, 'utf8');
+
+		eng.submitProgram(cards, {
+			sourceName: 'main.ae',
+			sourceUri: pathToFileURL(mainPath).toString()
+		});
+		eng.runToCompletion();
+
+		assert.equal(eng.store.get(0).value, 6n);
+	} finally {
+		fs.rmSync(fixtureRoot, { recursive: true, force: true });
+	}
 });
 
 test('combinatorial cards test', async () => {
@@ -249,6 +316,31 @@ test('uri library reader helper test', async () => {
 	assert.equal(systemLibrary.text, '. mem:/system/Library/sqrt.ae');
 });
 
+test('uri library reader helper prefers a user Library override before system library cards', async () => {
+	let reader = AE.createUriLibraryReader({
+		resolveSystemUri: async request => `mem:/system/${request.path}`,
+		resolveUserUri: async request => `mem:/workspace/project/${request.path}`,
+		readFile: async uri => {
+			if (uri === 'mem:/workspace/project/Library/sqrt.ae') {
+				return new TextEncoder().encode('. user override');
+			}
+
+			return new TextEncoder().encode(`. ${uri}`);
+		}
+	});
+
+	let systemLibrary = await reader({
+		kind: 'system',
+		name: 'sqrt',
+		path: 'Library/sqrt.ae',
+		sourceName: 'program.ae',
+		sourceUri: 'mem:/workspace/project/program.ae'
+	});
+
+	assert.equal(systemLibrary.text, '. user override');
+	assert.equal(systemLibrary.sourceUri, 'mem:/workspace/project/Library/sqrt.ae');
+});
+
 test('execution hooks can halt before a card executes', async () => {
 	let seen = [];
 	let eng = new AE.Interface({
@@ -303,6 +395,37 @@ test('cli help exits successfully', async () => {
 	});
 
 	assert.match(output, /Usage: .* filename/);
+});
+
+test('cli passes source uri so relative includes resolve from the program directory', async () => {
+	const fixtureRoot = path.join(__dirname, '.tmp-cli-relative-include');
+	const nestedDir = path.join(fixtureRoot, 'programs', 'math');
+	const helperDir = path.join(nestedDir, 'helpers');
+	const mainPath = path.join(nestedDir, 'main.ae');
+	const helperPath = path.join(helperDir, 'addtwo.ae');
+	const cliPath = path.resolve(__dirname, '..', 'analytical-engine');
+
+	fs.rmSync(fixtureRoot, { recursive: true, force: true });
+	fs.mkdirSync(helperDir, { recursive: true });
+	fs.writeFileSync(mainPath, `N000 4
+A include cards helpers/addtwo
+P`);
+	fs.writeFileSync(helperPath, `N001 2
++
+L000
+L001
+S000`);
+
+	try {
+		const output = childProcess.execFileSync(process.execPath, [cliPath, mainPath], {
+			encoding: 'utf8',
+			cwd: __dirname
+		});
+
+		assert.match(output, /Printer:\n6\n/);
+	} finally {
+		fs.rmSync(fixtureRoot, { recursive: true, force: true });
+	}
 });
 
 test('debugger api can step card by card and expose structured state', async () => {

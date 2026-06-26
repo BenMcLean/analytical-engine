@@ -321,13 +321,44 @@ function createUriLibraryReader(options) {
 	}
 
 	return async function(request) {
-		var resolved = request.kind === "system"
-			? await options.resolveSystemUri(request)
-			: await options.resolveUserUri(request);
-		var contents = await options.readFile(resolved, request);
+		var resolved;
+		var resolvedText;
+		var usedUserOverride = false;
+		if (request.kind === "system") {
+			var userResolved = request.sourceUri
+				? await options.resolveUserUri({
+					kind: "user",
+					name: request.name,
+					path: request.path,
+					sourceName: request.sourceName,
+					sourceUri: request.sourceUri
+				})
+				: null;
+			if (userResolved) {
+				try {
+					resolvedText = await options.readFile(userResolved, request);
+					resolved = userResolved;
+					usedUserOverride = true;
+				} catch (_error) {
+					resolved = await options.resolveSystemUri(request);
+				}
+			} else {
+				resolved = await options.resolveSystemUri(request);
+			}
+		} else {
+			resolved = await options.resolveUserUri(request);
+		}
+		var contents = resolvedText !== undefined
+			? resolvedText
+			: await options.readFile(resolved, request);
 		return {
 			text: decodeText(contents),
-			sourceName: request.name + " [Library]",
+			sourceName:
+				request.kind === "system" && !usedUserOverride
+					? request.name + " [Library]"
+					: resolved && typeof resolved.toString === "function"
+						? resolved.toString()
+						: String(resolved),
 			sourceUri: resolved && typeof resolved.toString === "function"
 				? resolved.toString()
 				: resolved

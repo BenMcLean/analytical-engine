@@ -2,6 +2,7 @@
 
 import path from 'node:path';
 import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
 
 import AE from './index.js';
 import yargs from 'yargs';
@@ -16,12 +17,16 @@ const argv = yargs(hideBin(process.argv))
 	.argv;
 
 try {
-	const cards = fs.readFileSync(path.resolve('.', argv._[0]), {
+	const programPath = path.resolve('.', argv._[0]);
+	const cards = fs.readFileSync(programPath, {
 		encoding: "utf8"
 	});
 
 	var eng = new AE.Interface();
-	eng.submitProgram(cards);
+	eng.submitProgram(cards, {
+		sourceName: argv._[0].toString(),
+		sourceUri: pathToFileURL(programPath).toString()
+	});
 	eng.runToCompletion();
 
 	if (argv.t) {
