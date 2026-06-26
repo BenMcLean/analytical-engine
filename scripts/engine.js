@@ -120,6 +120,7 @@ Engine.prototype.processCard = function() {
       typeof this.executionHooks.beforeCard === "function" &&
       this.executionHooks.beforeCard(currentCard, this) === false
     ) {
+      this.cardReader.backup(); // Re-queue card so next step/continue executes it
       this.lastStopReason = "breakpoint";
       this.halt();
       return false;

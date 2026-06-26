@@ -249,6 +249,14 @@ CardReader.prototype.advance = function(n) {
   return true;
 };
 
+//  Step back one card (used to re-queue a card stopped at by a breakpoint).
+CardReader.prototype.backup = function() {
+  if (this.nextCardNumber > 0) {
+    this.nextCardNumber--;
+  }
+  return this;
+};
+
 //  Back up the chain n cards.  Returns true if within
 //  chain, false if we've run off the start.
 CardReader.prototype.repeat = function(n) {
